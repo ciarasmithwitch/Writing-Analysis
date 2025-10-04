@@ -34,6 +34,7 @@ function analyze() {
   let output = "";
 
   // ---------- Sentence Length ----------
+
   const sentences = text.split(/[.!?]/).filter(s => s.trim().length > 0);
   const longSentences = sentences.filter(s => s.split(" ").length > 20);
   const longPercent = sentences.length > 0 ? Math.round((longSentences.length / sentences.length) * 100) : 0;
@@ -198,6 +199,7 @@ if(worldPercent > 70) {
   document.getElementById("output").innerHTML = output;
 }
 </script>
+  <p>If you get moderate sentence or too many long sentence results, you may want to edit to have more sentence length variety. If you get a "heavy" result for some categories, you may want to reduce how much you have of that and work towards more balance. If you get "quite a lot" results, it's something to look out for and maybe edit some to get more balanced, depending on your goals. If you get "balanced" results, great job! You're avoiding most first page problems.</p>
 
 </body>
 </html>
