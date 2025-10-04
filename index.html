@@ -22,168 +22,256 @@
   
   <label for="text">Paste your text:</label>
   <textarea id="text" maxlength="10000"></textarea><br>
-  <button id="analyzeBtn">Analyze</button>
+  <button onclick="analyze()">Analyze</button>
   
   <div id="output"></div>
 
-  <p>If you get moderate sentence or too many long sentence results, you may want to edit to have more sentence length variety. If you get a "heavy" result for some categories, you may want to reduce how much you have of that and work towards more balance. If you get "quite a lot" results, it's something to look out for and maybe edit some to get more balanced, depending on your goals. If you get "balanced" results, great job! You're avoiding most first page problems.</p>
-
 <script src="https://unpkg.com/compromise@latest/builds/compromise.min.js"></script>
 <script>
-  // Wait until page (and Compromise) is fully loaded
-  window.addEventListener('load', () => {
-    const analyzeButton = document.getElementById('analyzeBtn');
-    analyzeButton.addEventListener('click', analyze);
+function analyzeTense(text) {
+  const doc = nlp(text);
+  const verbs = doc.verbs();
+  const presentCount = verbs.filter(v => v.isPresentTense().out('array').length > 0).length;
+  const pastCount = verbs.filter(v => v.isPastTense().out('array').length > 0).length;
+  const futureCount = verbs.filter(v => v.isFutureTense().out('array').length > 0).length;
+  const totalVerbs = verbs.length;
+
+  if(totalVerbs === 0) return `<div class="green result">No verbs detected for tense analysis.</div>`;
+
+  const tensePercentages = {
+    Present: Math.round((presentCount / totalVerbs) * 100),
+    Past: Math.round((pastCount / totalVerbs) * 100),
+    Future: Math.round((futureCount / totalVerbs) * 100)
+  };
+
+  let output = `<p><strong>Verb Tense Analysis:</strong></p>`;
+  for(const [tense, pct] of Object.entries(tensePercentages)) {
+    let color = pct <= 60 ? "green" : pct <= 80 ? "yellow" : "red";
+    output += `<div class="${color} result">${tense} tense: ${pct}% (${tense === "Present" ? presentCount : tense === "Past" ? pastCount : futureCount} verbs)</div>`;
+  }
+
+  // Optional: warn if one tense dominates
+  const dominantTense = Object.entries(tensePercentages).sort((a,b)=>b[1]-a[1])[0];
+  if(dominantTense[1] > 80) {
+    output += `<div class="red result">Warning: Mostly ${dominantTense[0]} tense detected. Consider varying tenses for clarity.</div>`;
+  }
+
+  return output;
+}
+function analyze() {
+  const text = document.getElementById("text").value;
+  const namesInput = document.getElementById("names").value || "";
+  const totalWords = text.trim().split(/\s+/).filter(Boolean).length;
+  let output = "";
+
+  // ---------- Sentence Length ----------
+
+  const sentences = text.split(/[.!?]/).filter(s => s.trim().length > 0);
+  const longSentences = sentences.filter(s => s.split(" ").length > 20);
+  const longPercent = sentences.length > 0 ? Math.round((longSentences.length / sentences.length) * 100) : 0;
+  if(longPercent <= 25) {
+    output += `<div class="green result">Great sentence length variety: ${longPercent}% of sentences are long</div>`;
+  } else if(longPercent <= 60) {
+    output += `<div class="yellow result">Moderate long sentences: ${longPercent}% of sentences are long. Consider breaking some up.</div>`;
+  } else {
+    output += `<div class="red result">Too many long sentences: ${longPercent}% of sentences are long</div>`;
+  }
+
+  // ---------- Telling Words ----------
+const tellingWords = [
+  "happy","glad","joyful","delighted","cheerful","ecstatic","thrilled","content","pleased",
+  "proud","excited","elated","satisfied","overjoyed","jubilant","blissful","hopeful","optimistic",
+  "amused","relieved","thankful","grateful","peaceful","confident","enthusiastic","lively","energetic",
+  "sad","unhappy","depressed","miserable","lonely","heartbroken","sorrowful","gloomy","disappointed",
+  "despairing","tearful","melancholy","grief-stricken","hopeless","remorseful","regretful","wistful",
+  "dismayed","distressed","pained","anguished","hurt","mournful","dejected","vulnerable","defeated",
+  "angry","mad","furious","enraged","irritated","annoyed","frustrated","upset","resentful",
+  "bitter","outraged","agitated","hostile","provoked","indignant","exasperated","grumpy",
+  "displeased","infuriated","offended","cross","heated","tense","impatient",
+  "afraid","scared","nervous","anxious","panicked","uneasy","fearful","jittery","tense",
+  "worried","apprehensive","shaky","vulnerable","frightened","alarmed","disturbed","hesitant",
+  "insecure","paranoid","restless","edgy","overwhelmed","stressed","hesitant",
+  "surprised","shocked","stunned","amazed","startled","confused","bewildered","astonished",
+  "dumbfounded","speechless","staggered","flabbergasted","perplexed","overwhelmed",
+  "disgusted","grossed out","repulsed","offended","irritated","annoyed","frustrated",
+  "nauseated","sickened","disturbed","uncomfortable","horrified","shocked","uneasy",
+  "loved","cherished","adored","cared","fond","affectionate","infatuated","devoted",
+  "attached","romantic","tender","passionate","admired","caring","warm","sentimental",
+  "adoring","attached","devoted","compassionate","empathetic","gentle",
+  "embarrassed","ashamed","guilty","jealous","envious","curious","confident","determined",
+  "frightened","hopeful","impatient","lonely","nostalgic","pensive","resentful","shy",
+  "surly","tired","wistful","yearning","zealous","tense","conflicted","restless"
+];
+
+let tellingMatches = tellingWords.filter(word => text.toLowerCase().includes(word));
+let tellingWordCount = 0;
+tellingMatches.forEach(word => {
+  const regex = new RegExp("\\b" + word + "\\b", "gi");
+  const matches = text.match(regex);
+  if(matches) tellingWordCount += matches.length;
+});
+let tellingPercent = totalWords > 0 ? Math.round((tellingWordCount / totalWords) * 100) : 0;
+
+// Display with color thresholds and descriptive words
+let tellingColor, tellingDescriptor;
+
+if (tellingPercent <= 5) {
+  tellingColor = "green";
+  tellingDescriptor = "Low – good balance";
+} else if (tellingPercent <= 15) {
+  tellingColor = "yellow";
+  tellingDescriptor = "Moderate – consider reviewing";
+} else {
+  tellingColor = "red";
+  tellingDescriptor = "High – heavy on telling words";
+}
+
+output += `<div class="${tellingColor} result">
+  Telling words: ${tellingPercent}% of text (${tellingMatches.join(", ")}) – ${tellingDescriptor}
+</div>`;
+
+// ---------- Filter Words ----------
+const filterWords = [
+  "saw","touch","decided","looked","watched","noted","heard","wondered","knew","noticed","sound",
+  "experienced","thought","seemed","felt","realized","could","remembered","then","suddenly",
+  "very","really","just","that","each and every","as yet","as of yet","in order to","at the end of the day",
+  "as a matter of fact","for all intents and purposes","for the most part","with regard to",
+  "in reference to","needless to say","it is important to note that","during the course of",
+  "when it comes to","due to the fact"
+];
+
+let filterMatches = filterWords.filter(word => text.toLowerCase().includes(word));
+let filterWordCount = 0;
+filterMatches.forEach(word => {
+  const regex = new RegExp("\\b" + word + "\\b", "gi");
+  const matches = text.match(regex);
+  if(matches) filterWordCount += matches.length;
+});
+let filterPercent = totalWords > 0 ? Math.round((filterWordCount / totalWords) * 100) : 0;
+
+let filterColor, filterDescriptor;
+
+if (filterPercent <= 5) {
+  filterColor = "green";
+  filterDescriptor = "Low – good balance";
+} else if (filterPercent <= 15) {
+  filterColor = "yellow";
+  filterDescriptor = "Moderate – consider reviewing";
+} else {
+  filterColor = "red";
+  filterDescriptor = "High – heavy on filter words";
+}
+
+output += `<div class="${filterColor} result">
+  Filter words: ${filterPercent}% of text (${filterMatches.join(", ")}) – ${filterDescriptor}
+</div>`;
+
+
+  // ---------- Dialogue ----------
+  const dialogueMatches = text.match(/["“”']([^"“”']*)["“”']/g) || [];
+  const dialogueWords = dialogueMatches.join(" ").split(/\s+/).filter(Boolean).length;
+  const dialoguePercent = totalWords > 0 ? Math.round((dialogueWords / totalWords) * 100) : 0;
+  if (dialoguePercent > 50) {
+    output += `<div class="red result">Dialogue heavy: ${dialoguePercent}% of words are dialogue</div>`;
+  } else if (dialoguePercent > 30) {
+    output += `<div class="yellow result">Quite a lot of dialogue: ${dialoguePercent}%</div>`;
+  } else {
+    output += `<div class="green result">Balanced dialogue: ${dialoguePercent}%</div>`;
+  }
+
+  // ---------- Passive Voice ----------
+  const passiveWords = ["was","is","am","are","be","being","been","has","were","began to","begin to","starting to","started to"];
+  let passiveCount = 0;
+  const loweredText = text.toLowerCase();
+  passiveWords.forEach(word => {
+    const regex = new RegExp("\\b" + word + "\\b", "g");
+    const matches = loweredText.match(regex);
+    if(matches) passiveCount += matches.length;
   });
-
-  function analyzeTense(text) {
-    if (typeof nlp !== "function") return `<div class="red result">Compromise library not loaded.</div>`;
-    
-    const doc = nlp(text);
-    const verbs = doc.verbs();
-    const presentCount = verbs.filter(v => v.isPresentTense().out('array').length > 0).length;
-    const pastCount = verbs.filter(v => v.isPastTense().out('array').length > 0).length;
-    const futureCount = verbs.filter(v => v.isFutureTense().out('array').length > 0).length;
-    const totalVerbs = verbs.length;
-
-    if(totalVerbs === 0) return `<div class="green result">No verbs detected for tense analysis.</div>`;
-
-    const tensePercentages = {
-      Present: Math.round((presentCount / totalVerbs) * 100),
-      Past: Math.round((pastCount / totalVerbs) * 100),
-      Future: Math.round((futureCount / totalVerbs) * 100)
-    };
-
-    let output = '';
-    for(const [tense, pct] of Object.entries(tensePercentages)) {
-      let color = pct <= 60 ? "green" : pct <= 80 ? "yellow" : "red";
-      output += `<div class="${color} result">${tense} tense: ${pct}% (${tense === "Present" ? presentCount : tense === "Past" ? pastCount : futureCount} verbs)</div>`;
-    }
-
-    const dominantTense = Object.entries(tensePercentages).sort((a,b)=>b[1]-a[1])[0];
-    if(dominantTense[1] > 80) {
-      output += `<div class="red result">Warning: Mostly ${dominantTense[0]} tense detected. Consider varying tenses for clarity.</div>`;
-    }
-
-    return output;
+  const passivePercent = totalWords > 0 ? Math.round((passiveCount / totalWords) * 100) : 0;
+  if(passivePercent > 50) {
+    output += `<div class="red result">Passive heavy: ${passivePercent}% of words are passive</div>`;
+  } else if(passivePercent > 30) {
+    output += `<div class="yellow result">Quite a lot of passive voice: ${passivePercent}%</div>`;
+  } else {
+    output += `<div class="green result">Balanced between active and passive: ${passivePercent}%</div>`;
   }
 
-  function analyze() {
-    const text = document.getElementById("text").value;
-    const namesInput = document.getElementById("names").value || "";
-    const totalWords = text.trim().split(/\s+/).filter(Boolean).length;
-    let output = "";
-
-    // ---------- Sentence Length ----------
-    const sentences = text.split(/[.!?]/).filter(s => s.trim().length > 0);
-    const longSentences = sentences.filter(s => s.split(" ").length > 20);
-    const longPercent = sentences.length > 0 ? Math.round((longSentences.length / sentences.length) * 100) : 0;
-    if(longPercent <= 25) {
-      output += `<div class="green result">Great sentence length variety: ${longPercent}% of sentences are long</div>`;
-    } else if(longPercent <= 60) {
-      output += `<div class="yellow result">Moderate long sentences: ${longPercent}% of sentences are long. Consider breaking some up.</div>`;
-    } else {
-      output += `<div class="red result">Too many long sentences: ${longPercent}% of sentences are long</div>`;
+// ---------- Character vs Worldbuilding (Sliding Window) ----------
+const pronouns = ["she","her","he","him","i","me","my","we","us","our","they","them","their"];
+const userNames = namesInput.toLowerCase().split(",").map(n => n.trim()).filter(Boolean);
+const characterWords = [...pronouns, ...userNames];
+const wordsArray = text.toLowerCase().split(/\s+/).filter(Boolean);
+const windowSize = 20;  // number of words per block
+const step = 5;         // sliding step
+let characterBlocks = 0;
+let totalBlocks = 0;
+for(let i = 0; i < wordsArray.length; i += step) {
+    const block = wordsArray.slice(i, i + windowSize);
+    if(block.length === 0) continue;   // skip empty block
+    totalBlocks++;
+    if(block.some(word => characterWords.includes(word))) {
+        characterBlocks++;
     }
+}
+// Avoid divide-by-zero
+const characterPercent = totalBlocks > 0 ? Math.round((characterBlocks / totalBlocks) * 100) : 0;
+const worldPercent = 100 - characterPercent;
+if(worldPercent > 70) {
+    output += `<div class="red result">Heavy on worldbuilding: ${worldPercent}% of text lacks character focus</div>`;
+} else if(worldPercent > 50) {
+    output += `<div class="yellow result">Quite a bit of worldbuilding: ${worldPercent}% of text lacks character focus</div>`;
+} else {
+    output += `<div class="green result">Balanced: ${characterPercent}% character-focused, ${worldPercent}% world-focused</div>`;
+}
+// ---------- Overused Words ----------
+const wordsArrayLower = text.toLowerCase().match(/\b\w+\b/g) || [];
+const stopWords = ["the","and","a","an","of","in","to","with","for","on","at","by","is","it","as","that","this","from","was","were","be","are","i","you","he","she","they","we","him","her","them"];
+const wordCounts = {};
 
-    // ---------- Telling Words ----------
-    const tellingWords = [
-      "happy","glad","joyful","delighted","cheerful","ecstatic","thrilled","content","pleased",
-      "proud","excited","elated","satisfied","overjoyed","jubilant","blissful","hopeful","optimistic",
-      "amused","relieved","thankful","grateful","peaceful","confident","enthusiastic","lively","energetic",
-      "sad","unhappy","depressed","miserable","lonely","heartbroken","sorrowful","gloomy","disappointed",
-      "despairing","tearful","melancholy","grief-stricken","hopeless","remorseful","regretful","wistful",
-      "dismayed","distressed","pained","anguished","hurt","mournful","dejected","vulnerable","defeated",
-      "angry","mad","furious","enraged","irritated","annoyed","frustrated","upset","resentful",
-      "bitter","outraged","agitated","hostile","provoked","indignant","exasperated","grumpy",
-      "displeased","infuriated","offended","cross","heated","tense","impatient",
-      "afraid","scared","nervous","anxious","panicked","uneasy","fearful","jittery","tense",
-      "worried","apprehensive","shaky","vulnerable","frightened","alarmed","disturbed","hesitant",
-      "insecure","paranoid","restless","edgy","overwhelmed","stressed","hesitant",
-      "surprised","shocked","stunned","amazed","startled","confused","bewildered","astonished",
-      "dumbfounded","speechless","staggered","flabbergasted","perplexed","overwhelmed",
-      "disgusted","grossed out","repulsed","offended","irritated","annoyed","frustrated",
-      "nauseated","sickened","disturbed","uncomfortable","horrified","shocked","uneasy",
-      "loved","cherished","adored","cared","fond","affectionate","infatuated","devoted",
-      "attached","romantic","tender","passionate","admired","caring","warm","sentimental",
-      "adoring","attached","devoted","compassionate","empathetic","gentle",
-      "embarrassed","ashamed","guilty","jealous","envious","curious","confident","determined",
-      "frightened","hopeful","impatient","lonely","nostalgic","pensive","resentful","shy",
-      "surly","tired","wistful","yearning","zealous","tense","conflicted","restless"
-    ];
-
-    let tellingMatches = tellingWords.filter(word => text.toLowerCase().includes(word));
-    let tellingWordCount = 0;
-    tellingMatches.forEach(word => {
-      const regex = new RegExp("\\b" + word + "\\b", "gi");
-      const matches = text.match(regex);
-      if(matches) tellingWordCount += matches.length;
-    });
-    let tellingPercent = totalWords > 0 ? Math.round((tellingWordCount / totalWords) * 100) : 0;
-
-    let tellingColor, tellingDescriptor;
-    if (tellingPercent <= 5) {
-      tellingColor = "green";
-      tellingDescriptor = "Low – good balance";
-    } else if (tellingPercent <= 15) {
-      tellingColor = "yellow";
-      tellingDescriptor = "Moderate – consider reviewing";
-    } else {
-      tellingColor = "red";
-      tellingDescriptor = "High – heavy on telling words";
-    }
-
-    output += `<div class="${tellingColor} result">
-      Telling words: ${tellingPercent}% of text (${tellingMatches.join(", ")}) – ${tellingDescriptor}
-    </div>`;
-
-    // ---------- Filter Words ----------
-    const filterWords = [
-      "saw","touch","decided","looked","watched","noted","heard","wondered","knew","noticed","sound",
-      "experienced","thought","seemed","felt","realized","could","remembered","then","suddenly",
-      "very","really","just","that","each and every","as yet","as of yet","in order to","at the end of the day",
-      "as a matter of fact","for all intents and purposes","for the most part","with regard to",
-      "in reference to","needless to say","it is important to note that","during the course of",
-      "when it comes to","due to the fact"
-    ];
-
-    let filterMatches = filterWords.filter(word => text.toLowerCase().includes(word));
-    let filterWordCount = 0;
-    filterMatches.forEach(word => {
-      const regex = new RegExp("\\b" + word + "\\b", "gi");
-      const matches = text.match(regex);
-      if(matches) filterWordCount += matches.length;
-    });
-    let filterPercent = totalWords > 0 ? Math.round((filterWordCount / totalWords) * 100) : 0;
-
-    let filterColor, filterDescriptor;
-    if (filterPercent <= 5) {
-      filterColor = "green";
-      filterDescriptor = "Low – good balance";
-    } else if (filterPercent <= 15) {
-      filterColor = "yellow";
-      filterDescriptor = "Moderate – consider reviewing";
-    } else {
-      filterColor = "red";
-      filterDescriptor = "High – heavy on filter words";
-    }
-
-    output += `<div class="${filterColor} result">
-      Filter words: ${filterPercent}% of text (${filterMatches.join(", ")}) – ${filterDescriptor}
-    </div>`;
-
-    // ---------- Other blocks like Dialogue, Passive Voice, Character vs Worldbuilding, Overused Words ----------
-
-    // ---------- Tense Analysis ----------
-    output += `<p><strong>Tense Analysis:</strong></p>`;
-    output += analyzeTense(text);
-
-    document.getElementById("output").innerHTML = output;
+wordsArrayLower.forEach(word => {
+  if(!stopWords.includes(word)) {
+    // Count exact matches only
+    const regex = new RegExp("\\b" + word + "\\b", "gi");
+    const matches = text.match(regex);
+    if(matches) wordCounts[word] = (wordCounts[word] || 0) + matches.length;
   }
+});
+
+const overusedThreshold = Math.max(5, Math.round(totalWords * 0.01)); // e.g., 1% or at least 5 times
+const overused = Object.entries(wordCounts).filter(([word, count]) => count >= overusedThreshold)
+                                         .sort((a,b) => b[1]-a[1]);
+
+let overusedOutput = "";
+if(overused.length > 0) {
+  overused.forEach(([word, count]) => {
+    overusedOutput += `${word} (${count}x), `;
+  });
+  overusedOutput = overusedOutput.slice(0, -2); // remove trailing comma
+  output += `<p><strong>Overused Words:</strong></p>`;
+  output += `<div class="red result">Warning: Overused words detected: ${overusedOutput}</div>`;
+} else {
+  output += `<p><strong>Overused Words:</strong></p>`;
+  output += `<div class="green result">No major overused words detected.</div>`;
+}
+
+
+
+  // ---------- Tense Analysis ----------
+  output += `<p><strong>Tense Analysis:</strong></p>`;
+  output += analyzeTense(text);
+
+  document.getElementById("output").innerHTML = output;
+}
+
 </script>
+  <p>If you get moderate sentence or too many long sentence results, you may want to edit to have more sentence length variety. If you get a "heavy" result for some categories, you may want to reduce how much you have of that and work towards more balance. If you get "quite a lot" results, it's something to look out for and maybe edit some to get more balanced, depending on your goals. If you get "balanced" results, great job! You're avoiding most first page problems.</p>
 
 </body>
 </html>
+
+
+
 
 
 
