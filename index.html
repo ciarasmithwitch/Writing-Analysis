@@ -80,9 +80,23 @@ tellingMatches.forEach(word => {
 });
 let tellingPercent = totalWords > 0 ? Math.round((tellingWordCount / totalWords) * 100) : 0;
 
-// Display with color thresholds
-let tellingColor = tellingPercent <= 5 ? "green" : tellingPercent <= 15 ? "yellow" : "red";
-output += `<div class="${tellingColor} result">Telling words: ${tellingPercent}% of text (${tellingMatches.join(", ")})</div>`;
+// Display with color thresholds and descriptive words
+let tellingColor, tellingDescriptor;
+
+if (tellingPercent <= 5) {
+  tellingColor = "green";
+  tellingDescriptor = "Low – good balance";
+} else if (tellingPercent <= 15) {
+  tellingColor = "yellow";
+  tellingDescriptor = "Moderate – consider reviewing";
+} else {
+  tellingColor = "red";
+  tellingDescriptor = "High – heavy on telling words";
+}
+
+output += `<div class="${tellingColor} result">
+  Telling words: ${tellingPercent}% of text (${tellingMatches.join(", ")}) – ${tellingDescriptor}
+</div>`;
 
 // ---------- Filter Words ----------
 const filterWords = [
@@ -103,9 +117,23 @@ filterMatches.forEach(word => {
 });
 let filterPercent = totalWords > 0 ? Math.round((filterWordCount / totalWords) * 100) : 0;
 
-// Display with color thresholds
-let filterColor = filterPercent <= 5 ? "green" : filterPercent <= 15 ? "yellow" : "red";
-output += `<div class="${filterColor} result">Filter words: ${filterPercent}% of text (${filterMatches.join(", ")})</div>`;
+let filterColor, filterDescriptor;
+
+if (filterPercent <= 5) {
+  filterColor = "green";
+  filterDescriptor = "Low – good balance";
+} else if (filterPercent <= 15) {
+  filterColor = "yellow";
+  filterDescriptor = "Moderate – consider reviewing";
+} else {
+  filterColor = "red";
+  filterDescriptor = "High – heavy on filter words";
+}
+
+output += `<div class="${filterColor} result">
+  Filter words: ${filterPercent}% of text (${filterMatches.join(", ")}) – ${filterDescriptor}
+</div>`;
+
 
   // ---------- Dialogue ----------
   const dialogueMatches = text.match(/["“”']([^"“”']*)["“”']/g) || [];
