@@ -92,22 +92,31 @@
         output += `<div class="green result">Balanced between active and passive: ${passivePercent}%</div>`;
       }
 
-      // --- Worldbuilding / Character Focus ---
-      const pronouns = ["she","her","he","him","I","me","my","we","us","our","they","them","their"];
+      // --- Character / Worldbuilding per sentence ---
+      const pronouns = ["she","her","he","him","i","me","my","we","us","our","they","them","their"];
       const userNames = namesInput.toLowerCase().split(",").map(n => n.trim()).filter(Boolean);
       const characterWords = [...pronouns, ...userNames];
-
-      let characterCount = wordsArray.filter(word => characterWords.includes(word)).length;
-      let characterPercent = totalWords > 0 ? Math.round((characterCount / totalWords) * 100) : 0;
-      let worldPercent = 100 - characterPercent;
-
+      // Split text into sentences
+      const sentences = text.split(/(?<=[.!?])\s+/);
+      let characterSentences = 0;
+      const totalSentences = sentences.length;
+      sentences.forEach(sentence => {
+        const words = sentence.toLowerCase().split(/\s+/);
+        if (words.some(word => characterWords.includes(word))) {
+          characterSentences++;
+        }
+      });
+      const characterPercent = totalSentences > 0 ? Math.round((characterSentences / totalSentences) * 100) : 0;
+      const worldPercent = 100 - characterPercent;
+      // Generate output HTML
       if (worldPercent > 70) {
-        output += `<div class="red result">Heavy on worldbuilding: ${worldPercent}% (low character focus)</div>`;
+        output += `<div class="red result">Heavy on worldbuilding: ${worldPercent}% of sentences lack character words</div>`;
       } else if (worldPercent > 50) {
-        output += `<div class="yellow result">Quite a bit of worldbuilding: ${worldPercent}%</div>`;
+        output += `<div class="yellow result">Quite a bit of worldbuilding: ${worldPercent}% of sentences lack character words</div>`;
       } else {
-        output += `<div class="green result">Balanced: ${worldPercent}% world, ${characterPercent}% character</div>`;
+        output += `<div class="green result">Balanced: ${characterPercent}% character-focused sentences, ${worldPercent}% world-focused sentences</div>`;
       }
+
 
       document.getElementById("output").innerHTML = output;
     }
