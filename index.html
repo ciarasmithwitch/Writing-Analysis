@@ -26,38 +26,8 @@
   
   <div id="output"></div>
 
-<script src="https://unpkg.com/compromise@latest/builds/compromise.min.js"></script>
 <script>
-function analyzeTense(text) {
-  const doc = nlp(text);
-  const verbs = doc.verbs();
-  const presentCount = verbs.filter(v => v.isPresentTense().out('array').length > 0).length;
-  const pastCount = verbs.filter(v => v.isPastTense().out('array').length > 0).length;
-  const futureCount = verbs.filter(v => v.isFutureTense().out('array').length > 0).length;
-  const totalVerbs = verbs.length;
 
-  if(totalVerbs === 0) return `<div class="green result">No verbs detected for tense analysis.</div>`;
-
-  const tensePercentages = {
-    Present: Math.round((presentCount / totalVerbs) * 100),
-    Past: Math.round((pastCount / totalVerbs) * 100),
-    Future: Math.round((futureCount / totalVerbs) * 100)
-  };
-
-  let output = `<p><strong>Verb Tense Analysis:</strong></p>`;
-  for(const [tense, pct] of Object.entries(tensePercentages)) {
-    let color = pct <= 60 ? "green" : pct <= 80 ? "yellow" : "red";
-    output += `<div class="${color} result">${tense} tense: ${pct}% (${tense === "Present" ? presentCount : tense === "Past" ? pastCount : futureCount} verbs)</div>`;
-  }
-
-  // Optional: warn if one tense dominates
-  const dominantTense = Object.entries(tensePercentages).sort((a,b)=>b[1]-a[1])[0];
-  if(dominantTense[1] > 80) {
-    output += `<div class="red result">Warning: Mostly ${dominantTense[0]} tense detected. Consider varying tenses for clarity.</div>`;
-  }
-
-  return output;
-}
 function analyze() {
   const text = document.getElementById("text").value;
   const namesInput = document.getElementById("names").value || "";
@@ -254,12 +224,6 @@ if(overused.length > 0) {
   output += `<p><strong>Overused Words:</strong></p>`;
   output += `<div class="green result">No major overused words detected.</div>`;
 }
-
-
-
-  // ---------- Tense Analysis ----------
-  output += `<p><strong>Tense Analysis:</strong></p>`;
-  output += analyzeTense(text);
 
   document.getElementById("output").innerHTML = output;
 }
