@@ -13,7 +13,11 @@
 </head>
 <body>
   <h1>Writing Analyzer</h1>
-  <textarea id="text"></textarea><br>
+  <h3>Works best on web-browser.</h3>
+  <label for="names">Character names (comma separated):</label>
+  <input type="text" id="names" placeholder="e.g. Connor, Indy, Rosy">
+  <p>We measure worldbuilding as the percentage of words that are not pronouns (e.g. she/he/I). High percentages may indicate description or exposition. It's not perfect and please take it with a grain of salt.</p>
+  <textarea id="text" maxlength="10000"></textarea><br>
   <button onclick="analyze()">Analyze</button>
   <div id="output"></div>
 
@@ -22,7 +26,7 @@
       const text = document.getElementById("text").value;
       let output = "";
 
-      // Example: Check sentence length
+      // Check sentence length
       const sentences = text.split(/[.!?]/).filter(s => s.trim().length > 0);
       const longSentences = sentences.filter(s => s.split(" ").length > 20);
 
@@ -32,14 +36,77 @@
         output += `<div class="green result">Great sentence length variety!</div>`;
       }
 
-      // Example: Check for "telling words"
-      const tellingWords = ["suddenly","very","really","felt","knew","realized"];
+      // Check for "telling words"
+      const tellingWords = ["suddenly","very","really","felt","knew","realized","angry","sad","happy","chastise","anger","sadness","uncomfortable","anxious",];
       let found = tellingWords.filter(word => text.toLowerCase().includes(word));
       if(found.length > 0) {
         output += `<div class="yellow result">Telling words found: ${found.join(", ")}</div>`;
       } else {
         output += `<div class="green result">No telling words detected!</div>`;
       }
+
+      //Filter Words Check
+      const filterWords = ["saw","touch","decided","looked","watched","noted","heard","wondered","knew","noticed","sound","experienced","thought","seemed","felt","realized","could","remembered",]; 
+      let found = filterWords.filter(word => text.toLowerCase().includes(word)); 
+      if(found.length > 0) { 
+        output += <div class="yellow result">Filter words found: ${found.join(", ")}</div>; 
+          } else { 
+        output += <div class="green result">No filter words detected!</div>; }
+
+      // --- Dialogue Check ---
+      let dialogueMatches = text.match(/"([^"]*)"/g) || [];
+      let dialogueWords = dialogueMatches.join(" ").split(/\s+/).filter(Boolean).length;
+      let totalWords = text.trim().split(/\s+/).filter(Boolean).length;
+      let dialoguePercent = totalWords > 0 ? Math.round((dialogueWords / totalWords) * 100) : 0;
+
+      if (dialoguePercent > 50) {
+        output += `<div class="red result">Dialogue heavy: ${dialoguePercent}% of words are dialogue</div>`;
+      } else if (dialoguePercent > 30) {
+        output += `<div class="yellow result">Quite a lot of dialogue: ${dialoguePercent}%</div>`;
+      } else {
+        output += `<div class="green result">Balanced dialogue: ${dialoguePercent}%</div>`;
+      }
+
+      // --- Passive Voice Check ---
+      const passiveWords = ["was","is","am","are","be","being","been","has","were","began to","begin to","starting to","started to"];
+      let totalWords = text.trim().split(/\s+/).filter(Boolean).length;
+      let passiveCount = 0;
+      let lowered = text.toLowerCase();
+      passiveWords.forEach(word => {
+      let regex = new RegExp("\\b" + word + "\\b", "g");
+      let matches = lowered.match(regex);
+      if (matches) passiveCount += matches.length;
+      });
+      let passivePercent = totalWords > 0 ? Math.round((passiveCount / totalWords) * 100) : 0;
+      if (passivePercent > 50) {
+        output += `<div class="red result">Passive heavy: ${passivePercent}% of words are passive</div>`;
+      } else if (passivePercent > 30) {
+        output += `<div class="yellow result">Quite a lot of passive voice: ${passivePercent}%</div>`;
+      } else {
+        output += `<div class="green result">Balanced between active and passive: ${passivePercent}%</div>`;
+      }
+
+      // === Worldbuilding vs Character Check ===
+      // Base pronouns
+      const pronouns = ["she","her","he","him","i","me","my","we","us","our","they","them","their"];
+      // Add user-supplied names
+      let userNames = namesInput.toLowerCase().split(",").map(n => n.trim()).filter(Boolean);
+      const characterWords = [...pronouns, ...userNames];
+
+      let wordsArray = text.toLowerCase().split(/\s+/).filter(Boolean);
+      let characterCount = wordsArray.filter(word => characterWords.includes(word)).length;
+
+      let characterPercent = totalWords > 0 ? Math.round((characterCount / totalWords) * 100) : 0;
+      let worldPercent = 100 - characterPercent;
+
+      if (worldPercent > 70) {
+        output += `<div class="red result">Heavy on worldbuilding: ${worldPercent}% (low character focus)</div>`;
+      } else if (worldPercent > 50) {
+        output += `<div class="yellow result">Quite a bit of worldbuilding: ${worldPercent}%</div>`;
+      } else {
+        output += `<div class="green result">Balanced: ${worldPercent}% world, ${characterPercent}% character</div>`;
+      }
+
 
       document.getElementById("output").innerHTML = output;
     }
