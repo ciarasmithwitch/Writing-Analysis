@@ -64,7 +64,7 @@
       }
 
       // --- Dialogue ---
-      let dialogueMatches = text.match(/"([^"]*)"/g) || [];
+      let dialogueMatches = text.match(/["“”'‘’]([^"“”'‘’]*)["“”'‘’]/g) || [];
       let dialogueWords = dialogueMatches.join(" ").split(/\s+/).filter(Boolean).length;
       let dialoguePercent = totalWords > 0 ? Math.round((dialogueWords / totalWords) * 100) : 0;
       if (dialoguePercent > 50) {
@@ -93,7 +93,7 @@
       }
 
       // --- Worldbuilding / Character Focus ---
-      const pronouns = ["she","her","he","him","i","me","my","we","us","our","they","them","their"];
+      const pronouns = ["she","her","he","him","I","me","my","we","us","our","they","them","their"];
       const userNames = namesInput.toLowerCase().split(",").map(n => n.trim()).filter(Boolean);
       const characterWords = [...pronouns, ...userNames];
 
