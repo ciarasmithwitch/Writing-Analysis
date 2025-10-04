@@ -26,7 +26,38 @@
   
   <div id="output"></div>
 
+<script src="https://unpkg.com/compromise@latest/builds/compromise.min.js"></script>
 <script>
+function analyzeTense(text) {
+  const doc = nlp(text);
+  const verbs = doc.verbs();
+  const presentCount = verbs.filter(v => v.isPresentTense().out('array').length > 0).length;
+  const pastCount = verbs.filter(v => v.isPastTense().out('array').length > 0).length;
+  const futureCount = verbs.filter(v => v.isFutureTense().out('array').length > 0).length;
+  const totalVerbs = verbs.length;
+
+  if(totalVerbs === 0) return `<div class="green result">No verbs detected for tense analysis.</div>`;
+
+  const tensePercentages = {
+    Present: Math.round((presentCount / totalVerbs) * 100),
+    Past: Math.round((pastCount / totalVerbs) * 100),
+    Future: Math.round((futureCount / totalVerbs) * 100)
+  };
+
+  let output = `<p><strong>Verb Tense Analysis:</strong></p>`;
+  for(const [tense, pct] of Object.entries(tensePercentages)) {
+    let color = pct <= 60 ? "green" : pct <= 80 ? "yellow" : "red";
+    output += `<div class="${color} result">${tense} tense: ${pct}% (${tense === "Present" ? presentCount : tense === "Past" ? pastCount : futureCount} verbs)</div>`;
+  }
+
+  // Optional: warn if one tense dominates
+  const dominantTense = Object.entries(tensePercentages).sort((a,b)=>b[1]-a[1])[0];
+  if(dominantTense[1] > 80) {
+    output += `<div class="red result">Warning: Mostly ${dominantTense[0]} tense detected. Consider varying tenses for clarity.</div>`;
+  }
+
+  return output;
+}
 function analyze() {
   const text = document.getElementById("text").value;
   const namesInput = document.getElementById("names").value || "";
@@ -193,11 +224,46 @@ if(worldPercent > 70) {
 } else {
     output += `<div class="green result">Balanced: ${characterPercent}% character-focused, ${worldPercent}% world-focused</div>`;
 }
+// ---------- Overused Words ----------
+const wordsArrayLower = text.toLowerCase().match(/\b\w+\b/g) || [];
+const stopWords = ["the","and","a","an","of","in","to","with","for","on","at","by","is","it","as","that","this","from","was","were","be","are","i","you","he","she","they","we","him","her","them"];
+const wordCounts = {};
+
+wordsArrayLower.forEach(word => {
+  if(!stopWords.includes(word)) {
+    // Count exact matches only
+    const regex = new RegExp("\\b" + word + "\\b", "gi");
+    const matches = text.match(regex);
+    if(matches) wordCounts[word] = (wordCounts[word] || 0) + matches.length;
+  }
+});
+
+const overusedThreshold = Math.max(5, Math.round(totalWords * 0.01)); // e.g., 1% or at least 5 times
+const overused = Object.entries(wordCounts).filter(([word, count]) => count >= overusedThreshold)
+                                         .sort((a,b) => b[1]-a[1]);
+
+let overusedOutput = "";
+if(overused.length > 0) {
+  overused.forEach(([word, count]) => {
+    overusedOutput += `${word} (${count}x), `;
+  });
+  overusedOutput = overusedOutput.slice(0, -2); // remove trailing comma
+  output += `<p><strong>Overused Words:</strong></p>`;
+  output += `<div class="red result">Warning: Overused words detected: ${overusedOutput}</div>`;
+} else {
+  output += `<p><strong>Overused Words:</strong></p>`;
+  output += `<div class="green result">No major overused words detected.</div>`;
+}
 
 
-  // ---------- Show output ----------
+
+  // ---------- Tense Analysis ----------
+  output += `<p><strong>Tense Analysis:</strong></p>`;
+  output += analyzeTense(text);
+
   document.getElementById("output").innerHTML = output;
 }
+
 </script>
   <p>If you get moderate sentence or too many long sentence results, you may want to edit to have more sentence length variety. If you get a "heavy" result for some categories, you may want to reduce how much you have of that and work towards more balance. If you get "quite a lot" results, it's something to look out for and maybe edit some to get more balanced, depending on your goals. If you get "balanced" results, great job! You're avoiding most first page problems.</p>
 
