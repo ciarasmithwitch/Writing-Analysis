@@ -1,1 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Writing Analyzer</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    textarea { width: 100%; height: 200px; }
+    .result { margin-top: 15px; padding: 10px; border-radius: 6px; }
+    .green { background: #d4edda; }
+    .yellow { background: #fff3cd; }
+    .red { background: #f8d7da; }
+  </style>
+</head>
+<body>
+  <h1>Writing Analyzer</h1>
+  <textarea id="text"></textarea><br>
+  <button onclick="analyze()">Analyze</button>
+  <div id="output"></div>
+
+  <script>
+    function analyze() {
+      const text = document.getElementById("text").value;
+      let output = "";
+
+      // Example: Check sentence length
+      const sentences = text.split(/[.!?]/).filter(s => s.trim().length > 0);
+      const longSentences = sentences.filter(s => s.split(" ").length > 20);
+
+      if(longSentences.length > 0) {
+        output += `<div class="red result">Too many long sentences (${longSentences.length})</div>`;
+      } else {
+        output += `<div class="green result">Great sentence length variety!</div>`;
+      }
+
+      // Example: Check for "telling words"
+      const tellingWords = ["suddenly","very","really","felt","knew","realized"];
+      let found = tellingWords.filter(word => text.toLowerCase().includes(word));
+      if(found.length > 0) {
+        output += `<div class="yellow result">Telling words found: ${found.join(", ")}</div>`;
+      } else {
+        output += `<div class="green result">No telling words detected!</div>`;
+      }
+
+      document.getElementById("output").innerHTML = output;
+    }
+  </script>
+</body>
+</html>
 
