@@ -35,12 +35,15 @@ function analyze() {
 
   // ---------- Sentence Length ----------
   const sentences = text.split(/[.!?]/).filter(s => s.trim().length > 0);
-  const longSentences = sentences.filter(s => s.split(" ").length > 20);
-  if(longSentences.length > 0) {
-    output += `<div class="red result">Too many long sentences (${longSentences.length})</div>`;
-  } else {
-    output += `<div class="green result">Great sentence length variety!</div>`;
-  }
+const longSentences = sentences.filter(s => s.split(" ").length > 20);
+const longPercent = sentences.length > 0 ? Math.round((longSentences.length / sentences.length) * 100) : 0;
+if(longPercent <= 25) {
+    output += `<div class="green result">Great sentence length variety: ${longPercent}% of sentences are long</div>`;
+} else if(longPercent <= 60) {
+    output += `<div class="yellow result">Moderate long sentences: ${longPercent}% of sentences are long. Consider breaking some up.</div>`;
+} else {
+    output += `<div class="red result">Too many long sentences: ${longPercent}% of sentences are long</div>`;
+}
 
   // ---------- Telling Words ----------
   const tellingWords = ["suddenly","very","really","felt","knew","realized","angry","sad","happy","chastise","anger","sadness","uncomfortable","anxious"];
