@@ -26,111 +26,109 @@
   
   <div id="output"></div>
 
-  <script>
-    function analyze() {
-      const text = document.getElementById("text").value;
-      const namesInput = document.getElementById("names").value;
-      let output = "";
+<script>
+function analyze() {
+  const text = document.getElementById("text").value;
+  const namesInput = document.getElementById("names").value || "";
+  let output = "";
 
-      const wordsArray = text.trim().split(/\s+/).filter(Boolean);
-      const totalWords = wordsArray.length;
-      const loweredText = text.toLowerCase();
+  // ---------- Sentence Length ----------
+  const sentences = text.split(/[.!?]/).filter(s => s.trim().length > 0);
+  const longSentences = sentences.filter(s => s.split(" ").length > 20);
 
-      // --- Sentence Length ---
-      const sentences = text.split(/[.!?]/).filter(s => s.trim().length > 0);
-      const longSentences = sentences.filter(s => s.split(" ").length > 20);
-      if (longSentences.length > 0) {
-        output += `<div class="red result">Too many long sentences (${longSentences.length})</div>`;
-      } else {
-        output += `<div class="green result">Great sentence length variety!</div>`;
-      }
-
-      // --- Telling Words ---
-      const tellingWords = ["suddenly","very","really","felt","knew","realized","angry","sad","happy","chastise","anger","sadness","uncomfortable","anxious"];
-      let tellingFound = tellingWords.filter(word => loweredText.includes(word));
-      if (tellingFound.length > 0) {
-        output += `<div class="yellow result">Telling words found: ${tellingFound.join(", ")}</div>`;
-      } else {
-        output += `<div class="green result">No telling words detected!</div>`;
-      }
-
-      // --- Filter Words ---
-      const filterWords = ["saw","touch","decided","looked","watched","noted","heard","wondered","knew","noticed","sound","experienced","thought","seemed","felt","realized","could","remembered"];
-      let filterFound = filterWords.filter(word => loweredText.includes(word));
-      if (filterFound.length > 0) {
-        output += `<div class="yellow result">Filter words found: ${filterFound.join(", ")}</div>`;
-      } else {
-        output += `<div class="green result">No filter words detected!</div>`;
-      }
-
-      // --- Dialogue ---
-      let dialogueMatches = text.match(/["“”'‘’]([^"“”'‘’]*)["“”'‘’]/g) || [];
-      let dialogueWords = dialogueMatches.join(" ").split(/\s+/).filter(Boolean).length;
-      let dialoguePercent = totalWords > 0 ? Math.round((dialogueWords / totalWords) * 100) : 0;
-      if (dialoguePercent > 50) {
-        output += `<div class="red result">Dialogue heavy: ${dialoguePercent}% of words</div>`;
-      } else if (dialoguePercent > 30) {
-        output += `<div class="yellow result">Quite a lot of dialogue: ${dialoguePercent}%</div>`;
-      } else {
-        output += `<div class="green result">Balanced dialogue: ${dialoguePercent}%</div>`;
-      }
-
-      // --- Passive Voice ---
-      const passiveWords = ["was","is","am","are","be","being","been","has","were","began to","begin to","starting to","started to"];
-      let passiveCount = 0;
-      passiveWords.forEach(word => {
-        let regex = new RegExp("\\b" + word + "\\b", "g");
-        let matches = loweredText.match(regex);
-        if (matches) passiveCount += matches.length;
-      });
-      let passivePercent = totalWords > 0 ? Math.round((passiveCount / totalWords) * 100) : 0;
-      if (passivePercent > 50) {
-        output += `<div class="red result">Passive heavy: ${passivePercent}% of words</div>`;
-      } else if (passivePercent > 30) {
-        output += `<div class="yellow result">Quite a lot of passive voice: ${passivePercent}%</div>`;
-      } else {
-        output += `<div class="green result">Balanced between active and passive: ${passivePercent}%</div>`;
-      }
-
-// --- Character / Worldbuilding sliding window ---
-const pronouns = ["she","her","he","him","i","me","my","we","us","our","they","them","their"];
-const userNames = namesInput.toLowerCase().split(",").map(n => n.trim()).filter(Boolean);
-const characterWords = [...pronouns, ...userNames];
-
-const words = text.toLowerCase().split(/\s+/).filter(Boolean);
-const totalWords = words.length;
-
-const windowSize = 20; // number of words in each block
-const step = 5;        // overlap step
-let characterBlocks = 0;
-let totalBlocks = 0;
-
-for (let i = 0; i < words.length; i += step) {
-  const block = words.slice(i, i + windowSize);
-  if (block.length === 0) break;
-  totalBlocks++;
-  if (block.some(word => characterWords.includes(word))) {
-    characterBlocks++;
+  if(longSentences.length > 0) {
+    output += `<div class="red result">Too many long sentences (${longSentences.length})</div>`;
+  } else {
+    output += `<div class="green result">Great sentence length variety!</div>`;
   }
-}
 
-const characterPercent = totalBlocks > 0 ? Math.round((characterBlocks / totalBlocks) * 100) : 0;
-const worldPercent = 100 - characterPercent;
+  // ---------- Telling Words ----------
+  const tellingWords = ["suddenly","very","really","felt","knew","realized","angry","sad","happy","chastise","anger","sadness","uncomfortable","anxious"];
+  const foundTelling = tellingWords.filter(word => text.toLowerCase().includes(word));
+  if(foundTelling.length > 0) {
+    output += `<div class="yellow result">Telling words found: ${foundTelling.join(", ")}</div>`;
+  } else {
+    output += `<div class="green result">No telling words detected!</div>`;
+  }
 
-// Generate output HTML
-if (worldPercent > 70) {
-  output += `<div class="red result">Heavy on worldbuilding: ${worldPercent}% of text lacks character focus</div>`;
-} else if (worldPercent > 50) {
-  output += `<div class="yellow result">Quite a bit of worldbuilding: ${worldPercent}% of text lacks character focus</div>`;
-} else {
-  output += `<div class="green result">Balanced: ${characterPercent}% character-focused, ${worldPercent}% world-focused</div>`;
-}
+  // ---------- Filter Words ----------
+  const filterWords = ["saw","touch","decided","looked","watched","noted","heard","wondered","knew","noticed","sound","experienced","thought","seemed","felt","realized","could","remembered"];
+  const foundFilters = filterWords.filter(word => text.toLowerCase().includes(word));
+  if(foundFilters.length > 0) {
+    output += `<div class="yellow result">Filter words found: ${foundFilters.join(", ")}</div>`;
+  } else {
+    output += `<div class="green result">No filter words detected!</div>`;
+  }
 
+  // ---------- Dialogue ----------
+  const dialogueMatches = text.match(/["“”']([^"“”']*)["“”']/g) || [];
+  const dialogueWords = dialogueMatches.join(" ").split(/\s+/).filter(Boolean).length;
+  const totalWords = text.trim().split(/\s+/).filter(Boolean).length;
+  const dialoguePercent = totalWords > 0 ? Math.round((dialogueWords / totalWords) * 100) : 0;
 
+  if (dialoguePercent > 50) {
+    output += `<div class="red result">Dialogue heavy: ${dialoguePercent}% of words are dialogue</div>`;
+  } else if (dialoguePercent > 30) {
+    output += `<div class="yellow result">Quite a lot of dialogue: ${dialoguePercent}%</div>`;
+  } else {
+    output += `<div class="green result">Balanced dialogue: ${dialoguePercent}%</div>`;
+  }
 
-      document.getElementById("output").innerHTML = output;
+  // ---------- Passive Voice ----------
+  const passiveWords = ["was","is","am","are","be","being","been","has","were","began to","begin to","starting to","started to"];
+  let passiveCount = 0;
+  const loweredText = text.toLowerCase();
+  passiveWords.forEach(word => {
+    const regex = new RegExp("\\b" + word + "\\b", "g");
+    const matches = loweredText.match(regex);
+    if(matches) passiveCount += matches.length;
+  });
+  const passivePercent = totalWords > 0 ? Math.round((passiveCount / totalWords) * 100) : 0;
+
+  if(passivePercent > 50) {
+    output += `<div class="red result">Passive heavy: ${passivePercent}% of words are passive</div>`;
+  } else if(passivePercent > 30) {
+    output += `<div class="yellow result">Quite a lot of passive voice: ${passivePercent}%</div>`;
+  } else {
+    output += `<div class="green result">Balanced between active and passive: ${passivePercent}%</div>`;
+  }
+
+  // ---------- Character vs Worldbuilding (Sliding Window) ----------
+  const pronouns = ["she","her","he","him","i","me","my","we","us","our","they","them","their"];
+  const userNames = namesInput.toLowerCase().split(",").map(n => n.trim()).filter(Boolean);
+  const characterWords = [...pronouns, ...userNames];
+
+  const wordsArray = text.toLowerCase().split(/\s+/).filter(Boolean);
+  const windowSize = 20;
+  const step = 5;
+  let characterBlocks = 0;
+  let totalBlocks = 0;
+
+  for(let i = 0; i < wordsArray.length; i += step) {
+    const block = wordsArray.slice(i, i + windowSize);
+    if(block.length === 0) break;
+    totalBlocks++;
+    if(block.some(word => characterWords.includes(word))) {
+      characterBlocks++;
     }
-  </script>
+  }
+
+  const characterPercent = totalBlocks > 0 ? Math.round((characterBlocks / totalBlocks) * 100) : 0;
+  const worldPercent = 100 - characterPercent;
+
+  if(worldPercent > 70) {
+    output += `<div class="red result">Heavy on worldbuilding: ${worldPercent}% of text lacks character focus</div>`;
+  } else if(worldPercent > 50) {
+    output += `<div class="yellow result">Quite a bit of worldbuilding: ${worldPercent}% of text lacks character focus</div>`;
+  } else {
+    output += `<div class="green result">Balanced: ${characterPercent}% character-focused, ${worldPercent}% world-focused</div>`;
+  }
+
+  // ---------- Show output ----------
+  document.getElementById("output").innerHTML = output;
+}
+</script>
+
 </body>
 </html>
 
