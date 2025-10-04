@@ -196,7 +196,7 @@ if(worldPercent > 70) {
 }
 // ---------- Overused Words ----------
 const wordsArrayLower = text.toLowerCase().match(/\b\w+\b/g) || [];
-const stopWords = ["the","s","and","a","an","of","in","to","with","for","on","at","by","is","it","as","that","this","from","was","were","be","are","i","you","he","she","they","we","him","her","them"];
+const stopWords = ["the","s","and","t", "me", "my", "but","a","an","of","in","to","with","for","on","at","by","is","it","as","that","this","from","was","were","be","are","i","you","he","she","they","we","him","her","them"];
 const wordCounts = {};
 
 wordsArrayLower.forEach(word => {
