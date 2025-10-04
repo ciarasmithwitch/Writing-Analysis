@@ -92,30 +92,40 @@
         output += `<div class="green result">Balanced between active and passive: ${passivePercent}%</div>`;
       }
 
-      // --- Character / Worldbuilding per sentence ---
-      const pronouns = ["she","her","he","him","i","me","my","we","us","our","they","them","their"];
-      const userNames = namesInput.toLowerCase().split(",").map(n => n.trim()).filter(Boolean);
-      const characterWords = [...pronouns, ...userNames];
-      // Split text into sentences
-      const sentences = text.split(/(?<=[.!?])\s+/);
-      let characterSentences = 0;
-      const totalSentences = sentences.length;
-      sentences.forEach(sentence => {
-        const words = sentence.toLowerCase().split(/\s+/);
-        if (words.some(word => characterWords.includes(word))) {
-          characterSentences++;
-        }
-      });
-      const characterPercent = totalSentences > 0 ? Math.round((characterSentences / totalSentences) * 100) : 0;
-      const worldPercent = 100 - characterPercent;
-      // Generate output HTML
-      if (worldPercent > 70) {
-        output += `<div class="red result">Heavy on worldbuilding: ${worldPercent}% of sentences lack character words</div>`;
-      } else if (worldPercent > 50) {
-        output += `<div class="yellow result">Quite a bit of worldbuilding: ${worldPercent}% of sentences lack character words</div>`;
-      } else {
-        output += `<div class="green result">Balanced: ${characterPercent}% character-focused sentences, ${worldPercent}% world-focused sentences</div>`;
-      }
+// --- Character / Worldbuilding sliding window ---
+const pronouns = ["she","her","he","him","i","me","my","we","us","our","they","them","their"];
+const userNames = namesInput.toLowerCase().split(",").map(n => n.trim()).filter(Boolean);
+const characterWords = [...pronouns, ...userNames];
+
+const words = text.toLowerCase().split(/\s+/).filter(Boolean);
+const totalWords = words.length;
+
+const windowSize = 20; // number of words in each block
+const step = 5;        // overlap step
+let characterBlocks = 0;
+let totalBlocks = 0;
+
+for (let i = 0; i < words.length; i += step) {
+  const block = words.slice(i, i + windowSize);
+  if (block.length === 0) break;
+  totalBlocks++;
+  if (block.some(word => characterWords.includes(word))) {
+    characterBlocks++;
+  }
+}
+
+const characterPercent = totalBlocks > 0 ? Math.round((characterBlocks / totalBlocks) * 100) : 0;
+const worldPercent = 100 - characterPercent;
+
+// Generate output HTML
+if (worldPercent > 70) {
+  output += `<div class="red result">Heavy on worldbuilding: ${worldPercent}% of text lacks character focus</div>`;
+} else if (worldPercent > 50) {
+  output += `<div class="yellow result">Quite a bit of worldbuilding: ${worldPercent}% of text lacks character focus</div>`;
+} else {
+  output += `<div class="green result">Balanced: ${characterPercent}% character-focused, ${worldPercent}% world-focused</div>`;
+}
+
 
 
       document.getElementById("output").innerHTML = output;
