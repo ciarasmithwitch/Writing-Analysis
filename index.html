@@ -4,7 +4,9 @@
   <title>Writing Analyzer</title>
   <style>
     body { font-family: sans-serif; padding: 20px; }
-    textarea { width: 100%; height: 200px; }
+    textarea, input { width: 100%; margin: 10px 0; }
+    textarea { height: 200px; }
+    button { padding: 10px 15px; font-size: 16px; margin-top: 10px; }
     .result { margin-top: 15px; padding: 10px; border-radius: 6px; }
     .green { background: #d4edda; }
     .yellow { background: #fff3cd; }
@@ -13,13 +15,12 @@
 </head>
 <body>
   <h1>Writing Analyzer</h1>
-  <h3>Works best on web-browser.</h3>
-
   <label for="names">Character names (comma separated):</label>
   <input type="text" id="names" placeholder="e.g. Connor, Indy, Rosy">
   
-  <p>We measure worldbuilding as the percentage of words that are not pronouns (e.g. she/he/I). High percentages may indicate description or exposition. It's not perfect and please take it with a grain of salt.</p>
+  <p>We measure worldbuilding as the percentage of words that are not pronouns (e.g. she/he/I). High percentages may indicate description or exposition. It's a proxy metric.</p>
   
+  <label for="text">Paste your text:</label>
   <textarea id="text" maxlength="10000"></textarea><br>
   <button onclick="analyze()">Analyze</button>
   
@@ -31,12 +32,13 @@
       const namesInput = document.getElementById("names").value;
       let output = "";
 
-      const totalWords = text.trim().split(/\s+/).filter(Boolean).length;
+      const wordsArray = text.trim().split(/\s+/).filter(Boolean);
+      const totalWords = wordsArray.length;
+      const loweredText = text.toLowerCase();
 
-      // --- Sentence Length Check ---
+      // --- Sentence Length ---
       const sentences = text.split(/[.!?]/).filter(s => s.trim().length > 0);
       const longSentences = sentences.filter(s => s.split(" ").length > 20);
-
       if (longSentences.length > 0) {
         output += `<div class="red result">Too many long sentences (${longSentences.length})</div>`;
       } else {
@@ -45,61 +47,57 @@
 
       // --- Telling Words ---
       const tellingWords = ["suddenly","very","really","felt","knew","realized","angry","sad","happy","chastise","anger","sadness","uncomfortable","anxious"];
-      let found = tellingWords.filter(word => text.toLowerCase().includes(word));
-      if (found.length > 0) {
-        output += `<div class="yellow result">Telling words found: ${found.join(", ")}</div>`;
+      let tellingFound = tellingWords.filter(word => loweredText.includes(word));
+      if (tellingFound.length > 0) {
+        output += `<div class="yellow result">Telling words found: ${tellingFound.join(", ")}</div>`;
       } else {
         output += `<div class="green result">No telling words detected!</div>`;
       }
 
       // --- Filter Words ---
-      const filterWords = ["saw","touch","decided","looked","watched","noted","heard","wondered","knew","noticed","sound","experienced","thought","seemed","felt","realized","could","remembered"]; 
-      found = filterWords.filter(word => text.toLowerCase().includes(word)); 
-      if (found.length > 0) { 
-        output += `<div class="yellow result">Filter words found: ${found.join(", ")}</div>`; 
-      } else { 
-        output += `<div class="green result">No filter words detected!</div>`; 
+      const filterWords = ["saw","touch","decided","looked","watched","noted","heard","wondered","knew","noticed","sound","experienced","thought","seemed","felt","realized","could","remembered"];
+      let filterFound = filterWords.filter(word => loweredText.includes(word));
+      if (filterFound.length > 0) {
+        output += `<div class="yellow result">Filter words found: ${filterFound.join(", ")}</div>`;
+      } else {
+        output += `<div class="green result">No filter words detected!</div>`;
       }
 
-      // --- Dialogue Check ---
+      // --- Dialogue ---
       let dialogueMatches = text.match(/"([^"]*)"/g) || [];
       let dialogueWords = dialogueMatches.join(" ").split(/\s+/).filter(Boolean).length;
       let dialoguePercent = totalWords > 0 ? Math.round((dialogueWords / totalWords) * 100) : 0;
-
       if (dialoguePercent > 50) {
-        output += `<div class="red result">Dialogue heavy: ${dialoguePercent}% of words are dialogue</div>`;
+        output += `<div class="red result">Dialogue heavy: ${dialoguePercent}% of words</div>`;
       } else if (dialoguePercent > 30) {
         output += `<div class="yellow result">Quite a lot of dialogue: ${dialoguePercent}%</div>`;
       } else {
         output += `<div class="green result">Balanced dialogue: ${dialoguePercent}%</div>`;
       }
 
-      // --- Passive Voice Check ---
+      // --- Passive Voice ---
       const passiveWords = ["was","is","am","are","be","being","been","has","were","began to","begin to","starting to","started to"];
       let passiveCount = 0;
-      let lowered = text.toLowerCase();
       passiveWords.forEach(word => {
         let regex = new RegExp("\\b" + word + "\\b", "g");
-        let matches = lowered.match(regex);
+        let matches = loweredText.match(regex);
         if (matches) passiveCount += matches.length;
       });
       let passivePercent = totalWords > 0 ? Math.round((passiveCount / totalWords) * 100) : 0;
       if (passivePercent > 50) {
-        output += `<div class="red result">Passive heavy: ${passivePercent}% of words are passive</div>`;
+        output += `<div class="red result">Passive heavy: ${passivePercent}% of words</div>`;
       } else if (passivePercent > 30) {
         output += `<div class="yellow result">Quite a lot of passive voice: ${passivePercent}%</div>`;
       } else {
         output += `<div class="green result">Balanced between active and passive: ${passivePercent}%</div>`;
       }
 
-      // --- Worldbuilding vs Character ---
+      // --- Worldbuilding / Character Focus ---
       const pronouns = ["she","her","he","him","i","me","my","we","us","our","they","them","their"];
-      let userNames = namesInput.toLowerCase().split(",").map(n => n.trim()).filter(Boolean);
+      const userNames = namesInput.toLowerCase().split(",").map(n => n.trim()).filter(Boolean);
       const characterWords = [...pronouns, ...userNames];
 
-      let wordsArray = text.toLowerCase().split(/\s+/).filter(Boolean);
       let characterCount = wordsArray.filter(word => characterWords.includes(word)).length;
-
       let characterPercent = totalWords > 0 ? Math.round((characterCount / totalWords) * 100) : 0;
       let worldPercent = 100 - characterPercent;
 
@@ -116,5 +114,6 @@
   </script>
 </body>
 </html>
+
 
 
